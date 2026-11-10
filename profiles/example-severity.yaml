@@ -1,0 +1,26 @@
+name: example-severity
+version: 1
+description: Example profile that grades a bug report's severity instead of its root cause
+
+guide: example-severity_guide.md
+
+labels:
+  - name: Critical
+    description: Data loss, a security hole, or the tool is unusable for most users.
+  - name: Major
+    description: A core feature is broken but a workaround exists.
+  - name: Minor
+    description: Cosmetic, rare, or limited to an edge case.
+
+reasoning:
+  - field: impact
+    title: Impact
+    description: Describe what breaks for the user and how badly
+  - field: workaround
+    title: Workaround
+    description: Note whether the report or the discussion gives a workaround
+  - field: scope
+    title: Scope
+    description: Estimate how many users or configurations are affected
+
+confidence: [High, Medium, Low]

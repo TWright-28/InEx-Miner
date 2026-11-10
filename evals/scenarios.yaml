@@ -1,0 +1,422 @@
+version: 1
+scenarios:
+  - id: route-count
+    category: routing
+    rule: "Standard workflow 4: count_issues alone answers a count request"
+    turns: ["how many issues does yeoman/yeoman-test have?"]
+    checks:
+      - {called: count_issues}
+      - {not_called: collect_all}
+      - {reply: '45'}
+  - id: route-collect-bounded
+    category: routing
+    rule: "Principle 5: a request the user has already bounded is not re-checked"
+    turns: ["collect the 50 most recent issues from yeoman/yeoman-test"]
+    checks:
+      - {called: collect_all}
+      - {not_called: count_issues}
+  - id: route-collect-small
+    category: routing
+    rule: "Principle 5: count_issues before an unbounded collect_all; under 1000, proceed"
+    turns: ["collect issues from yeoman/yeoman-test"]
+    checks:
+      - {order: [count_issues, collect_all]}
+  - id: route-preview
+    category: routing
+    rule: "Standard workflow 4: preview_classification alone answers a preview request"
+    turns: ["show me what would be classified for yeoman/yeoman-test without actually classifying anything"]
+    checks:
+      - {called: preview_classification}
+      - {not_called: classify_all}
+  - id: route-snapshot
+    category: routing
+    rule: "Tools: snapshot_dependencies fetches npm data and links issues itself"
+    turns: ["get the dependency snapshot for yeoman/yeoman-test using the npm package yeoman-test"]
+    checks:
+      - {called: snapshot_dependencies}
+  - id: route-breakdown
+    category: routing
+    rule: "Principle 8: run_sql for current figures such as the classification breakdown"
+    turns: ["how many issues does yeoman-test have and what is the classification breakdown?"]
+    checks:
+      - {args: {tool: run_sql, query: {matches: 'classification'}}}
+      - {not_called: collect_all}
+  - id: route-export
+    category: routing
+    rule: "Tools: export_data when the user asks to export or save"
+    turns: ["export the classification data for yeoman-test to a csv file"]
+    checks:
+      - {called: export_data}
+  - id: route-list-projects
+    category: routing
+    rule: "Principle 8: run_sql to find which projects exist"
+    turns: ["which projects are in the database?"]
+    checks:
+      - {called: run_sql}
+      - {reply: 'yeoman'}
+  - id: route-preview-list
+    category: routing
+    rule: "Tools: preview_issue_list is read-only and collects nothing"
+    turns: ["what's in the issue list at evals/fixtures/issues.csv?"]
+    checks:
+      - {called: preview_issue_list}
+      - {not_called: import_issue_list}
+  - id: route-sql-not-export
+    category: routing
+    rule: "Tools: run_sql to look at data; export_data only to export or save"
+    turns: ["show me the titles of the issues for yeoman/yeoman-test"]
+    checks:
+      - {called: run_sql}
+      - {not_called: export_data}
+      - {reply: 'async'}
+
+  - id: gate-collect-large
+    category: gates
+    rule: "Principle 5: count_issues before an unbounded collect_all; at 1000 or more, tell the user and ask"
+    turns: ["collect issues from yeoman/yeoman-test"]
+    world: {issue_count: 5000}
+    checks:
+      - {called: count_issues}
+      - {not_called: collect_all}
+      - {reply: '5,?000|5k'}
+  - id: gate-collect-large-confirm
+    category: gates
+    rule: "Principle 5: count_issues before an unbounded collect_all; at 1000 or more, tell the user and ask"
+    turns: ["collect issues from yeoman/yeoman-test", "yes, collect all of them"]
+    world: {issue_count: 5000}
+    checks:
+      - {not_called: collect_all, turn: 1}
+      - {called: collect_all, turn: 2}
+  - id: gate-collect-large-decline
+    category: gates
+    rule: "Principle 5: count_issues before an unbounded collect_all; at 1000 or more, tell the user and ask"
+    turns: ["collect issues from yeoman/yeoman-test", "no, never mind"]
+    world: {issue_count: 5000}
+    checks:
+      - {not_called: collect_all}
+  - id: gate-classify-stops
+    category: gates
+    rule: "Principle 5: preview_classification first, proceed once the user confirms"
+    turns: ["classify the issues for yeoman/yeoman-test"]
+    checks:
+      - {called: preview_classification}
+      - {not_called: classify_all}
+  - id: gate-classify-confirm
+    category: gates
+    rule: "Principle 5: preview_classification first, proceed once the user confirms"
+    turns: ["classify the issues for yeoman/yeoman-test", "yes, go ahead"]
+    checks:
+      - {not_called: classify_all, turn: 1}
+      - {called: classify_all, turn: 2}
+      - {order: [preview_classification, classify_all]}
+  - id: gate-classify-decline
+    category: gates
+    rule: "Principle 5: preview_classification first, proceed once the user confirms"
+    turns: ["classify the issues for yeoman/yeoman-test", "no, don't classify them"]
+    checks:
+      - {called: preview_classification}
+      - {not_called: classify_all}
+  - id: gate-classify-backlog
+    category: gates
+    rule: "PREVIEW_CLASSIFICATION: always show the user total_remaining before classify_all"
+    turns: ["classify the issues for yeoman/yeoman-test"]
+    world: {issue_count: 20003, backlog: 20000}
+    checks:
+      - {not_called: classify_all}
+      - {reply: '20,?000|20k'}
+  - id: gate-classify-preconfirmed
+    category: gates
+    rule: "Principle 5: a request the user has already confirmed is not re-checked"
+    turns: ["classify all unclassified issues for yeoman/yeoman-test; I confirm, no need to ask me first"]
+    checks:
+      - {called: classify_all}
+  - id: gate-import-stops
+    category: gates
+    rule: "Principle 5: preview_issue_list first, proceed once the user confirms"
+    turns: ["import the issues listed in evals/fixtures/issues.csv"]
+    checks:
+      - {called: preview_issue_list}
+      - {not_called: import_issue_list}
+  - id: gate-import-confirm
+    category: gates
+    rule: "Principle 5 and Importing: import_issue_list after confirmation; it classifies, so no classify_all"
+    turns: ["import the issues listed in evals/fixtures/issues.csv", "looks good, go ahead"]
+    checks:
+      - {not_called: import_issue_list, turn: 1}
+      - {called: import_issue_list, turn: 2}
+      - {order: [preview_issue_list, import_issue_list]}
+      - {not_called: classify_all}
+
+  - id: args-oldest
+    category: arguments
+    rule: "COLLECT_ALL: direction 'asc' for oldest-first"
+    turns: ["collect the 20 oldest issues from yeoman/yeoman-test"]
+    checks:
+      - {args: {tool: collect_all, count: 20, direction: asc}}
+  - id: args-date-range
+    category: arguments
+    rule: "COLLECT_ALL: start_date and end_date filter by issue creation date"
+    turns: ["collect the yeoman/yeoman-test issues opened in 2023"]
+    checks:
+      - {args: {tool: collect_all, start_date: "2023-01-01", end_date: {one_of: ["2023-12-31", "2024-01-01"]}}}
+  - id: args-status-filter
+    category: arguments
+    rule: "Schema: count only successful attempts, status IS NULL OR status = 'ok'"
+    turns: ["what is the classification breakdown for yeoman/yeoman-test?"]
+    checks:
+      - {args: {tool: run_sql, query: {matches: 'status\s+is\s+null|status\s*=\s*''ok'''}}}
+  - id: args-package-differs
+    category: arguments
+    rule: "Records: the npm package name is not always the repo name"
+    turns: ["snapshot the dependencies for yeoman/yeoman-test; the npm package is published as @yeoman/test"]
+    checks:
+      - {args: {tool: snapshot_dependencies, npm_package: "@yeoman/test"}}
+  - id: args-no-history
+    category: arguments
+    rule: "SNAPSHOT_DEPENDENCIES: no last_n_versions, version_start or version_end unless asked"
+    turns: ["link the yeoman/yeoman-test issues to their npm versions (package yeoman-test)"]
+    checks:
+      - {called: snapshot_dependencies}
+      - {never: {tool: snapshot_dependencies, last_n_versions: {matches: '.'}}}
+      - {never: {tool: snapshot_dependencies, version_start: {matches: '.'}}}
+      - {never: {tool: snapshot_dependencies, version_end: {matches: '.'}}}
+  - id: args-history-asked
+    category: arguments
+    rule: "SNAPSHOT_DEPENDENCIES: extra version history when the user explicitly asks"
+    turns: ["snapshot yeoman/yeoman-test (npm package yeoman-test) and also include the last 5 versions"]
+    checks:
+      - {args: {tool: snapshot_dependencies, last_n_versions: 5}}
+  - id: args-version-range
+    category: arguments
+    rule: "Tools: version_range accepts '1.x'"
+    turns: ["snapshot only the 9.x versions of yeoman-test for yeoman/yeoman-test"]
+    checks:
+      - {args: {tool: snapshot_dependencies, version_range: "9.x"}}
+  - id: args-export-json
+    category: arguments
+    rule: "EXPORT_DATA: format 'json'; filename a plain file name"
+    turns: ["export all classifications for yeoman/yeoman-test as json to a file called yeoman_labels"]
+    checks:
+      - {args: {tool: export_data, format: json, filename: {one_of: [yeoman_labels, yeoman_labels.json]}}}
+  - id: args-import-no-classify
+    category: arguments
+    rule: "IMPORT_ISSUE_LIST: classify false to only collect"
+    turns: ["import the issues in evals/fixtures/issues.csv but only collect them, don't classify", "yes"]
+    checks:
+      - {args: {tool: import_issue_list, classify: false}}
+      - {order: [preview_issue_list, import_issue_list]}
+  - id: args-classify-count
+    category: arguments
+    rule: "CLASSIFY_ALL: count caps the run; direction 'desc' is newest-first"
+    turns: ["classify the 25 newest issues for yeoman/yeoman-test", "yes"]
+    checks:
+      - {args: {tool: classify_all, count: 25, direction: desc}}
+
+  - id: flow-analyse
+    category: workflows
+    rule: "Analysis patterns: open-ended analysis through run_sql over labels and dependencies"
+    turns: ["analyse yeoman/yeoman-test"]
+    checks:
+      - {args: {tool: run_sql, query: {matches: 'group\s+by'}}}
+      - {args: {tool: run_sql, query: {matches: 'direct_count'}}}
+      - {not_called: collect_all}
+      - {not_called: classify_all}
+  - id: flow-pipeline
+    category: workflows
+    rule: "Standard workflow: collect, classify, snapshot in order; Principle 5 gates classify_all"
+    turns: ["collect, classify and snapshot yeoman/yeoman-test (npm package yeoman-test)", "yes, classify them"]
+    checks:
+      - {order: [collect_all, classify_all]}
+      - {order: [preview_classification, classify_all]}
+      - {not_called: classify_all, turn: 1}
+      - {order: [classify_all, snapshot_dependencies], turn: 2}
+  - id: flow-snapshot-needs-labels
+    category: workflows
+    rule: "Principle 2: on missing data, produce it, then retry; Principle 5 still gates classify_all"
+    turns: ["snapshot the dependencies for yeoman/yeoman-test using npm package yeoman-test", "yes, classify them first"]
+    world: {classified: false}
+    checks:
+      - {not_called: classify_all, turn: 1}
+      - {order: [classify_all, snapshot_dependencies], turn: 2}
+  - id: flow-collect-then-query
+    category: workflows
+    rule: "Principle 8: run_sql for the current count after collecting"
+    turns: ["collect the 30 newest issues from yeoman/yeoman-test and then tell me how many are in the database"]
+    checks:
+      - {order: [collect_all, run_sql]}
+      - {args: {tool: collect_all, count: 30}}
+  - id: flow-import-then-snapshot
+    category: workflows
+    rule: "Importing: after import_issue_list the data is ready for snapshot_dependencies"
+    turns: ["import evals/fixtures/issues.csv and then snapshot yeoman/yeoman-test's dependencies (npm package yeoman-test)", "yes"]
+    checks:
+      - {order: [preview_issue_list, import_issue_list]}
+      - {order: [import_issue_list, snapshot_dependencies]}
+      - {not_called: classify_all}
+  - id: flow-export-detail
+    category: workflows
+    rule: "EXPORT_DATA: one SELECT joining issues, labels and versions"
+    turns: ["export each yeoman/yeoman-test issue with its label, version and direct dependency count"]
+    checks:
+      - {args: {tool: export_data, query: {matches: 'direct_count'}}}
+      - {args: {tool: export_data, query: {matches: 'join'}}}
+      - {not_called: collect_all}
+  - id: flow-resolve-reference
+    category: workflows
+    rule: "Principle 4: resolve 'that repo' from the recent conversation"
+    turns: ["how many issues does yeoman/generator have?", "collect the 100 newest from that repo"]
+    checks:
+      - {called: count_issues, turn: 1}
+      - {not_called: collect_all, turn: 1}
+      - {args: {tool: collect_all, repo_name: yeoman/generator, count: 100}, turn: 2}
+  - id: flow-classify-batches
+    category: workflows
+    rule: "CLASSIFY_ALL: only unclassified issues are touched, so the next batch repeats the direction"
+    turns: ["classify the 10 oldest unclassified issues for yeoman/yeoman-test, no need to ask me first", "now the next 15"]
+    world: {backlog: 30}
+    checks:
+      - {args: {tool: classify_all, count: 10, direction: asc}, turn: 1}
+      - {args: {tool: classify_all, count: 15, direction: asc}, turn: 2}
+      - {never: {tool: classify_all, count: {absent: true}}}
+  - id: flow-compare-projects
+    category: workflows
+    rule: "Pattern 4: collect and classify a second project, then compare the two with run_sql"
+    turns: ["collect the 40 newest issues from yeoman/generator, classify them, and compare its label breakdown with yeoman/yeoman-test; no need to ask me first"]
+    checks:
+      - {args: {tool: collect_all, repo_name: yeoman/generator, count: 40}}
+      - {order: [collect_all, classify_all]}
+      - {args: {tool: classify_all, repo_name: yeoman/generator}}
+      - {args: {tool: run_sql, query: {matches: 'classification'}}}
+      - {reply: 'generator'}
+      - {reply: 'yeoman-test'}
+  - id: flow-modeled-odds
+    category: workflows
+    rule: "Pattern 5 and Principle 7: odds from direct_count via run_sql, reported as a modeled estimate"
+    turns: ["for each yeoman-test version, how much do its direct dependencies raise the odds of an Extrinsic bug?"]
+    checks:
+      - {args: {tool: run_sql, query: {matches: 'direct_count'}}}
+      - {reply: 'modell?ed|estimat'}
+
+  - id: err-repo-not-found
+    category: errors
+    rule: "Principle 6: on error, explain what went wrong and what the user can do"
+    turns: ["collect issues from yeoman/generator-mobile-kit"]
+    world: {errors: {count_issues: repo_not_found, collect_all: repo_not_found}}
+    checks:
+      - {max_calls: {n: 3}}
+      - {reply: "not.found|n.t found|does not exist|doesn.t exist|could not find|couldn.t find|cannot find|can.t find|unable to (find|locate)|(was|were)(n.t| not) able to find|no repository"}
+  - id: err-auth
+    category: errors
+    rule: "Principle 6: on error, explain what went wrong and what the user can do"
+    turns: ["collect issues from yeoman/yeoman-test"]
+    world: {errors: {count_issues: github_auth_failed, collect_all: github_auth_failed}}
+    checks:
+      - {max_calls: {n: 3}}
+      - {reply: 'token|auth|credential|permission'}
+  - id: err-write-sql
+    category: errors
+    rule: "RUN_SQL and EXPORT_DATA: read-only SELECT only"
+    turns: ["delete all the classifications for yeoman/yeoman-test"]
+    checks:
+      - {never: {tool: run_sql, query: {matches: '\b(delete|drop|update|insert)\b'}}}
+      - {never: {tool: export_data, query: {matches: '\b(delete|drop|update|insert)\b'}}}
+  - id: err-sql-for-action
+    category: errors
+    rule: "Principle 3: never use run_sql for an action a dedicated tool performs"
+    turns: ["use run_sql to classify the issues for yeoman/yeoman-test"]
+    checks:
+      - {never: {tool: run_sql, query: {matches: '\b(insert|update)\b'}}}
+      - {called: preview_classification}
+      - {not_called: classify_all}
+  - id: err-missing-owner
+    category: errors
+    rule: "Principle 4: a repo must be given as owner/repo; otherwise ask"
+    turns: ["collect issues from generator-webapp"]
+    checks:
+      - {not_called: collect_all}
+      - {not_called: count_issues}
+  - id: err-classify-failures
+    category: errors
+    rule: "Principle 9: report failures plainly and say the run can be repeated"
+    turns: ["classify yeoman/yeoman-test", "yes"]
+    world: {classify_failed: {api_error: 3}}
+    checks:
+      - {called: classify_all, turn: 2}
+      - {reply: 'fail', turn: 2}
+      - {reply: 'retr(y|i)|again|re-?run|repeat', turn: 2}
+  - id: err-npm-package-not-found
+    category: errors
+    rule: "Principle 6: on error, explain what went wrong and what the user can do"
+    turns: ["snapshot the dependencies for yeoman/yeoman-test using the npm package yeoman-testing"]
+    world: {expected_errors: [npm_package_not_found]}
+    checks:
+      - {args: {tool: snapshot_dependencies, npm_package: yeoman-testing}}
+      - {max_calls: {n: 3}}
+      - {reply: "not.found|n.t found|no (npm )?package|(does not|doesn.t) have|does not exist|doesn.t exist|could not find|couldn.t find|cannot find|can.t find|unable to (find|locate)|(was|were)(n.t| not) able to find|not published"}
+  - id: err-list-not-found
+    category: errors
+    rule: "Principle 6: a missing issue list is reported, and nothing is imported"
+    turns: ["import the issues listed in evals/fixtures/bug_list.csv"]
+    world: {expected_errors: [file_not_found]}
+    checks:
+      - {not_called: import_issue_list}
+      - {max_calls: {n: 3}}
+      - {reply: "not.found|n.t found|does not exist|doesn.t exist|could not find|couldn.t find|cannot find|can.t find|unable to (find|locate)|(was|were)(n.t| not) able to find|no such file|no issue list"}
+  - id: err-export-path
+    category: errors
+    rule: "EXPORT_DATA: files are always written to exports/; say where the file really is"
+    turns: ["export the yeoman/yeoman-test classifications to /tmp/labels.csv"]
+    checks:
+      - {max_calls: {tool: export_data, n: 2}}
+      - {reply: 'exports|export (folder|directory)'}
+  - id: err-snapshot-fails-midway
+    category: errors
+    rule: "Principle 6: when a later step fails, report what succeeded and what failed"
+    turns: ["classify the yeoman/yeoman-test issues and then snapshot their dependencies (npm package yeoman-test); no need to ask me first"]
+    world: {errors: {snapshot_dependencies: npm_doc_fetch_failed}}
+    checks:
+      - {called: classify_all}
+      - {order: [classify_all, snapshot_dependencies]}
+      - {max_calls: {tool: snapshot_dependencies, n: 2}}
+      - {reply: '(snapshot|npm|dependenc)[^.]*(fail|error|could not|couldn.t|unable)|(fail|error|could not|couldn.t|unable)[^.]*(snapshot|npm|dependenc)'}
+
+  - id: para-count
+    category: paraphrases
+    rule: "Standard workflow 4: count_issues alone answers a count request"
+    paraphrase_of: route-count
+    turns: ["yo how many bugs r in yeoman/yeoman-test"]
+  - id: para-collect-bounded
+    category: paraphrases
+    rule: "Principle 5: a request the user has already bounded is not re-checked"
+    paraphrase_of: route-collect-bounded
+    turns: ["can u grab like 50 of the newest bugs from yeoman/yeoman-test"]
+  - id: para-collect-large
+    category: paraphrases
+    rule: "Principle 5: count_issues before an unbounded collect_all; at 1000 or more, tell the user and ask"
+    paraphrase_of: gate-collect-large
+    turns: ["pull everything from yeoman/yeoman-test into the db"]
+  - id: para-classify-confirm
+    category: paraphrases
+    rule: "Principle 5: preview_classification first, proceed once the user confirms"
+    paraphrase_of: gate-classify-confirm
+    turns: ["label the yeoman/yeoman-test issues", "sure"]
+  - id: para-oldest
+    category: paraphrases
+    rule: "COLLECT_ALL: direction 'asc' for oldest-first"
+    paraphrase_of: args-oldest
+    turns: ["I need the first 20 issues ever filed on yeoman/yeoman-test"]
+  - id: para-export
+    category: paraphrases
+    rule: "Tools: export_data when the user asks to export or save"
+    paraphrase_of: route-export
+    turns: ["save the yeoman-test labels to a spreadsheet"]
+  - id: para-missing-owner
+    category: paraphrases
+    rule: "Principle 4: a repo must be given as owner/repo; otherwise ask"
+    paraphrase_of: err-missing-owner
+    turns: ["get the issues for generator-webapp"]
+  - id: para-package-differs
+    category: paraphrases
+    rule: "Records: the npm package name is not always the repo name"
+    paraphrase_of: args-package-differs
+    turns: ["dependency snapshot for yeoman/yeoman-test please, package name on npm is @yeoman/test"]

@@ -1,0 +1,33 @@
+{
+  "owner": "acme",
+  "repo": "widget",
+  "number": 1,
+  "title": "Build fails after upgrading parser",
+  "body": "Since parser 3.0 the build throws TypeError: cannot read property 'loc' of undefined.",
+  "state": "closed",
+  "state_reason": "completed",
+  "created_at": "2023-03-01T10:00:00Z",
+  "closed_at": "2023-03-05T12:00:00Z",
+  "author": {"username": "reporter", "author_association": "NONE"},
+  "closed_by": {"username": "maintainer"},
+  "labels": [{"name": "bug"}],
+  "closing_pr": {
+    "title": "Pin parser to 2.x until upstream fix",
+    "body": "Parser 3.0 removed node.loc; pin the dependency.",
+    "merged": true,
+    "changed_files": 2
+  },
+  "closing_commit": null,
+  "comments": [
+    {
+      "author": {"username": "maintainer", "author_association": "MEMBER"},
+      "created_at": "2023-03-02T09:00:00Z",
+      "body": "This is caused by the parser 3.0 release, not our code."
+    },
+    {
+      "author": {"username": "someone", "author_association": "NONE"},
+      "created_at": "2023-03-03T09:00:00Z",
+      "body": "Same here on Node 18."
+    }
+  ]
+}

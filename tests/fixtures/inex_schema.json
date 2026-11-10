@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "_Probabilities": {
+      "properties": {
+        "intrinsic": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Intrinsic",
+          "type": "number"
+        },
+        "extrinsic": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Extrinsic",
+          "type": "number"
+        },
+        "not_a_bug": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Not A Bug",
+          "type": "number"
+        },
+        "unknown": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Unknown",
+          "type": "number"
+        }
+      },
+      "required": [
+        "intrinsic",
+        "extrinsic",
+        "not_a_bug",
+        "unknown"
+      ],
+      "title": "_Probabilities",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "definition_check": {
+      "title": "Definition Check",
+      "type": "string"
+    },
+    "maintainer_signal": {
+      "title": "Maintainer Signal",
+      "type": "string"
+    },
+    "pr_commit_evidence": {
+      "title": "Pr Commit Evidence",
+      "type": "string"
+    },
+    "temporal_signals": {
+      "title": "Temporal Signals",
+      "type": "string"
+    },
+    "contract_rule": {
+      "title": "Contract Rule",
+      "type": "string"
+    },
+    "information_completeness": {
+      "title": "Information Completeness",
+      "type": "string"
+    },
+    "decision": {
+      "title": "Decision",
+      "type": "string"
+    },
+    "confidence": {
+      "enum": [
+        "High",
+        "Medium",
+        "Low"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "probabilities": {
+      "$ref": "#/$defs/_Probabilities"
+    },
+    "final_answer": {
+      "enum": [
+        "Intrinsic",
+        "Extrinsic",
+        "Not a Bug",
+        "Unknown"
+      ],
+      "title": "Final Answer",
+      "type": "string"
+    }
+  },
+  "required": [
+    "definition_check",
+    "maintainer_signal",
+    "pr_commit_evidence",
+    "temporal_signals",
+    "contract_rule",
+    "information_completeness",
+    "decision",
+    "confidence",
+    "probabilities",
+    "final_answer"
+  ],
+  "title": "ClassificationResult",
+  "type": "object"
+}

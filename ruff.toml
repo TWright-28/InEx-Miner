@@ -1,0 +1,15 @@
+line-length = 100
+target-version = "py311"
+extend-exclude = ["venv", ".npm_doc_cache", "db", "logs"]
+
+[lint]
+select = ["E", "F", "I", "B", "UP", "N", "TID"]
+ignore = ["E501"]
+
+[lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[lint.per-file-ignores]
+"tests/test_concurrency.py" = ["N802"]
+"inex/services/collection.py" = ["N"]
+"inex/services/classification.py" = ["N"]

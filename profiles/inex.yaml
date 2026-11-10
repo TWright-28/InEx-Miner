@@ -1,0 +1,40 @@
+name: inex
+version: 1
+description: Intrinsic / Extrinsic / Not-a-Bug root-cause attribution
+
+guide: inex_guide.md
+
+labels:
+  - name: Intrinsic
+    description: Root cause is inside this repository.
+  - name: Extrinsic
+    description: Root cause is outside this repository.
+  - name: Not a Bug
+    description: Not a defect in production code.
+  - name: Unknown
+    description: Insufficient information to classify.
+
+reasoning:
+  - field: definition_check
+    title: Definition Check
+    description: Identify which category definitions match the signals
+  - field: maintainer_signal
+    title: Maintainer Signal
+    description: Note any authoritative maintainer comments about root cause
+  - field: pr_commit_evidence
+    title: PR/Commit Evidence
+    description: If closing PR exists, describe what it changed and why
+  - field: temporal_signals
+    title: Temporal Signals
+    description: 'Check for version changes, upgrades, "works on X fails on Y" patterns'
+  - field: contract_rule
+    title: Contract Rule
+    description: If API usage involved, determine who violated the contract
+  - field: information_completeness
+    title: Information Completeness
+    description: Assess if there's enough detail to classify confidently
+  - field: decision
+    title: Decision
+    description: State your classification and the primary evidence supporting it
+
+confidence: [High, Medium, Low]

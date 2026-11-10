@@ -1,0 +1,28 @@
+{
+  "owner": "acme",
+  "repo": "widget",
+  "number": 42,
+  "title": "Build fails after upgrading parser",
+  "body": "Since parser 3.0 the build throws TypeError: cannot read property 'loc' of undefined.\n\nSteps: npm install parser@3 && npm run build",
+  "state": "closed",
+  "state_reason": "completed",
+  "created_at": "2023-03-01T10:00:00Z",
+  "closed_at": "2023-03-05T12:00:00Z",
+  "author": {"username": "reporter", "author_association": "NONE"},
+  "closed_by": {"username": "lead"},
+  "labels": [{"name": "bug"}, {"name": "needs triage"}],
+  "closing_pr": {
+    "title": "Pin parser to 2.x until upstream fix",
+    "body": "Parser 3.0 removed node.loc; pin the dependency until they restore it.",
+    "merged": true,
+    "changed_files": 2
+  },
+  "closing_commit": {"message": "Pin parser to 2.x (#43)"},
+  "comments": [
+    {"author": {"username": "helper", "author_association": "NONE"}, "created_at": "2023-03-01T12:00:00Z", "body": "Same here on Node 18."},
+    {"author": {"username": "lead", "author_association": "OWNER"}, "created_at": "2023-03-04T08:00:00Z", "body": "Fixed by pinning, see #43."},
+    {"author": {"username": "dev", "author_association": "CONTRIBUTOR"}, "created_at": "2023-03-02T15:00:00Z", "body": "Bisected to the parser 3.0 release."},
+    {"author": {"username": "member", "author_association": "MEMBER"}, "created_at": "2023-03-02T09:00:00Z", "body": "This is caused by the parser 3.0 release, not our code."},
+    {"author": {"username": "bystander", "author_association": "NONE"}, "created_at": "2023-03-01T11:00:00Z", "body": "+1"}
+  ]
+}

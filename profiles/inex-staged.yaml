@@ -1,0 +1,23 @@
+name: inex-staged
+version: 1
+description: Staged Intrinsic / Extrinsic / Not-a-Bug attribution (validity, recover, origin)
+
+labels:
+  - name: Intrinsic
+    description: Root cause is inside this repository.
+  - name: Extrinsic
+    description: Root cause is outside this repository.
+  - name: Not a Bug
+    description: Not a defect in production code.
+
+confidence: [High, Medium, Low]
+
+stages:
+  validity:
+    guide: inex-staged/stage_1.md
+    labels: [Bug, Not a Bug]
+  recover:
+    guide: inex-staged/recover.md
+  origin:
+    guide: inex-staged/stage_2.md
+    labels: [Intrinsic, Extrinsic]
