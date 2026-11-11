@@ -126,7 +126,7 @@ Everything you are likely to want to change is a setting, a flag or a text file:
 | Run entirely on local models | Ollama model names in the three settings above | `.env` |
 | Label issues with your own categories | a profile: a YAML file and a Markdown guide | `profiles/`, then `--profile` |
 | Reword how issues are judged | the guide the profile points to | `profiles/*.md` |
-| Skip the re-check stage | remove `recover:` from a copy of the staged profile | `profiles/` |
+| Skip the re-check stage | delete the `recover:` block from a copy of the staged profile ([how](#your-own-labels)) | `profiles/` |
 | Keep separate datasets | `--db path/to/other.db` | the command line |
 | Pick which issues | `--count`, `--since`, `--until`, `--oldest-first`, `--closed`, or a CSV list | the command line |
 | Trade speed for cost or rate limits | `INEX_WORKERS`, `INEX_RETRIES`, `INEX_THINKING` | `.env` |
@@ -413,16 +413,39 @@ receives the guide and the issue (title, body, comments, closing pull request) a
 its reasoning, a score for each label and its answer. An answer outside the list is a failed
 call, not a label.
 
-**To make your own:** copy `example-severity.yaml` and its guide, change the labels, the
-reasoning steps and the wording, and run with `--profile profiles/your-profile.yaml` (or set
-`INEX_PROFILE`). A broken profile is rejected when the tool starts, before any work. The
-chat agent picks up the new labels automatically.
+**To make your own:** copy `example-severity.yaml` and `example-severity_guide.md` to new
+names in `profiles/`. In the copied YAML, change `name` and point `guide` at your copied
+guide, or it will keep reading the example's guide:
+
+```yaml
+name: my-labels
+guide: my-labels_guide.md
+```
+
+Then change the labels, the reasoning steps and the wording, and run with
+`--profile profiles/my-labels.yaml` (or set `INEX_PROFILE`). Guide paths are read from the
+profile's own folder, so keep the two files together. A broken profile is rejected when the
+tool starts, before any work. The chat agent picks up the new labels automatically.
 
 **The default, staged profile** asks three questions instead of one: *is this a bug?*
 (validity), then, for "Not a Bug" answers, *is that right?* (recover, asked of a separate
 judge model), then, for bugs, *is the cause inside or outside the project?* (origin). Each
 step has its own guide in `profiles/inex-staged/`, and every step's answer is stored with
-the label. To skip the re-check, remove `recover:` from a copy of the profile.
+the label.
+
+To skip the re-check, copy `inex-staged.yaml` to a new name in `profiles/`, change its `name`,
+and delete the whole `recover:` block: the `recover:` line **and** the `guide:` line under
+it. Its `stages` should then read:
+
+```yaml
+stages:
+  validity:
+    guide: inex-staged/stage_1.md
+    labels: [Bug, Not a Bug]
+  origin:
+    guide: inex-staged/stage_2.md
+    labels: [Intrinsic, Extrinsic]
+```
 
 **Every label records what produced it.** It is stored with the model, the temperature and
 a prompt version such as `inex-staged@db6aae2e6399+s1`: the profile's name and a hash of its
