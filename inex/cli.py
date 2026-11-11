@@ -71,16 +71,21 @@ def _window(args):
     }
 
 
+def _closed_word(closed):
+    return "closed " if closed else ""
+
+
 def _count(app, args):
-    result = app.collection.count(*parse_repo(args.repo))
-    return result, f"{result.owner}/{result.repo} has {result.issue_count} issues."
+    result = app.collection.count(*parse_repo(args.repo), closed=args.closed)
+    kind = _closed_word(args.closed)
+    return result, f"{result.owner}/{result.repo} has {result.issue_count} {kind}issues."
 
 
 def _collect(app, args):
     owner, repo = parse_repo(args.repo)
-    result = app.collection.collect(owner, repo, **_window(args))
+    result = app.collection.collect(owner, repo, **_window(args), closed=args.closed)
     return result, (
-        f"Collected {result.collected} issues from {owner}/{repo} "
+        f"Collected {result.collected} {_closed_word(args.closed)}issues from {owner}/{repo} "
         f"({result.skipped} already in the database, {result.total} in total)."
     )
 
@@ -298,10 +303,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     count = commands.add_parser("count", help="count a repository's issues on GitHub")
     count.add_argument("repo", metavar="OWNER/REPO")
+    count.add_argument("--closed", action="store_true", help="count closed issues only")
     count.set_defaults(handler=_count)
 
     collect = commands.add_parser("collect", help="collect issues into the database")
     _add_repo_window(collect)
+    collect.add_argument("--closed", action="store_true", help="collect closed issues only")
     collect.set_defaults(handler=_collect)
 
     classify = commands.add_parser("classify", help="classify collected issues")

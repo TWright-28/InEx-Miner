@@ -36,14 +36,15 @@ COUNT_ISSUES = (
     "Count the total number of issues in a GitHub repo without collecting them. Use this before "
     "collect_all to check if the repo is large. Input: repo_name as 'owner/repo'. Returns the "
     "exact count (issue_count) and how many of the repo's issues are already in the database "
-    "(stored)."
+    "(stored). Optional: closed_only (true to count closed issues only)."
 )
 COLLECT_ALL = (
     "Collect issues from a GitHub repo and save them to the database. Input: repo_name as "
     "'owner/repo'. Optional: count (how many NEW issues to collect; issues already in the "
     "database are skipped and do not count toward it), start_date and end_date (ISO "
     "'YYYY-MM-DD', filter by issue creation date), direction ('desc' for newest-first, 'asc' for "
-    "oldest-first; default desc). When the user asks for a total ('1000 in total', 'until there "
+    "oldest-first; default desc), closed_only (true to collect closed issues only; pass the "
+    "same value to count_issues). When the user asks for a total ('1000 in total', 'until there "
     "are 1000'), call count_issues first and pass the total minus stored as count; if stored "
     "already reaches the total, collect nothing and say so. Returns collected, skipped (already "
     "stored) and total (issues stored for the repo afterwards). Long-running: multiple API "
@@ -131,6 +132,7 @@ OptionalText = Annotated[str | None, BeforeValidator(omitted)]
 Direction = Annotated[str, BeforeValidator(or_default("desc"))]
 ExportFormat = Annotated[str, BeforeValidator(or_default("csv"))]
 Classify = Annotated[bool, BeforeValidator(or_default(True))]
+ClosedOnly = Annotated[bool, BeforeValidator(or_default(False))]
 
 
 def respond(call):
@@ -155,8 +157,8 @@ def _window(count, start_date, end_date, direction):
 
 def build_tools(app) -> list:
     @tool("count_issues", description=COUNT_ISSUES)
-    def count_issues(repo_name: str) -> dict:
-        return respond(lambda: app.collection.count(*parse_repo(repo_name)))
+    def count_issues(repo_name: str, closed_only: ClosedOnly = False) -> dict:
+        return respond(lambda: app.collection.count(*parse_repo(repo_name), closed=closed_only))
 
     @tool("collect_all", description=COLLECT_ALL)
     def collect_all(
@@ -165,11 +167,12 @@ def build_tools(app) -> list:
         start_date: OptionalText = None,
         end_date: OptionalText = None,
         direction: Direction = "desc",
+        closed_only: ClosedOnly = False,
     ) -> dict:
         def call():
             owner, repo = parse_repo(repo_name)
             return app.collection.collect(
-                owner, repo, **_window(count, start_date, end_date, direction)
+                owner, repo, **_window(count, start_date, end_date, direction), closed=closed_only
             )
 
         return respond(call)

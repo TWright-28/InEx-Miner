@@ -95,7 +95,7 @@ Then just ask. A first session on a small project might be:
 
 ```
 You: How many issues does yeoman/yeoman-test have?
-You: Collect the 20 most recent ones.
+You: Collect the 20 most recent closed ones.
 You: Classify them.
 You: Link them to their npm releases.
 You: Which label is most common, and how many dependencies did those releases have?
@@ -128,7 +128,7 @@ Everything you are likely to want to change is a setting, a flag or a text file:
 | Reword how issues are judged | the guide the profile points to | `profiles/*.md` |
 | Skip the re-check stage | remove `recover:` from a copy of the staged profile | `profiles/` |
 | Keep separate datasets | `--db path/to/other.db` | the command line |
-| Pick which issues | `--count`, `--since`, `--until`, `--oldest-first`, or a CSV list | the command line |
+| Pick which issues | `--count`, `--since`, `--until`, `--oldest-first`, `--closed`, or a CSV list | the command line |
 | Trade speed for cost or rate limits | `INEX_WORKERS`, `INEX_RETRIES`, `INEX_THINKING` | `.env` |
 | Change how the chat agent behaves | its instructions, in plain text | `prompts/system_prompt.md` |
 | Ask your own questions of the data | any SQL `SELECT` | `query` and `export` |
@@ -193,7 +193,8 @@ python -m inex count yeoman/yeoman-test
 yeoman/yeoman-test has 77 issues.
 ```
 
-Counts issues (not pull requests) on GitHub and stores nothing.
+Counts issues (not pull requests) on GitHub and stores nothing. Add `--closed` to count
+closed issues only.
 
 ### 3. Collect issues
 
@@ -213,6 +214,8 @@ activity, timestamps and the pull request or commit that closed it.
   same command again collects the next 20.
 - `--since DATE` and `--until DATE` (`YYYY-MM-DD`) limit it to issues created in that window.
 - `--oldest-first` starts from the repository's first issue.
+- `--closed` collects closed issues only. Closed issues usually carry the fix and the
+  maintainers' conclusion, which is the evidence the classifier leans on.
 - When GitHub's hourly rate limit runs out, it waits for the reset and carries on. Dropped
   connections are retried.
 
@@ -553,9 +556,9 @@ python -m inex [--db PATH] [--classifier MODEL] [--judge MODEL] [--profile PATH]
 
 | Command | What it does |
 |---|---|
-| `count OWNER/REPO` | Count a repository's issues on GitHub |
-| `collect OWNER/REPO [--count N] [--since DATE] [--until DATE] [--oldest-first]` | Collect issues and their evidence |
-| `classify OWNER/REPO [same options] [--preview]` | Label collected issues |
+| `count OWNER/REPO [--closed]` | Count a repository's issues on GitHub |
+| `collect OWNER/REPO [--count N] [--since DATE] [--until DATE] [--oldest-first] [--closed]` | Collect issues and their evidence |
+| `classify OWNER/REPO [--count N] [--since DATE] [--until DATE] [--oldest-first] [--preview]` | Label collected issues |
 | `link OWNER/REPO --package NAME [--since DATE] [--until DATE] [--version-range R] [--last-versions N] [--versions-from DATE] [--versions-to DATE]` | Link issues to the npm release live when they were filed |
 | `import LIST.csv [--column NAME] [--collect-only] [--preview]` | Collect and classify a list of `owner/repo#number` |
 | `load FILE_OR_DIR --model M --prompt-version P [--temperature T]` | Load issues and labels from JSONL |

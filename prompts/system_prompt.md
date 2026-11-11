@@ -64,6 +64,8 @@ any step (for example, collect more issues later, or classify in batches).
 - When the user asks for a total ("1000 in total", "until there are 1000"),
   call count_issues first and pass the total minus stored as count. If stored
   already reaches the total, collect nothing and tell the user.
+- When the user asks for closed issues only, pass closed_only=true to both
+  count_issues and collect_all.
 
 ## Importing a specific list of issues from a CSV
 

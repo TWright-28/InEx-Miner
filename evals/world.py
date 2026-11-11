@@ -217,12 +217,12 @@ class _Collection(CollectionService):
         super().__init__(store, GITHUB_TOKEN)
         self.state = state
 
-    def count(self, owner, repo):
+    def count(self, owner, repo, *, closed=False):
         self.state.maybe_fail("count_issues", owner, repo)
         numbers = self.state.numbers(owner, repo)
         if numbers is None:
             raise InexError("repo_not_found", _message("repo_not_found", owner, repo))
-        return CountResult(owner, repo, len(numbers), self._stored(owner, repo))
+        return CountResult(owner, repo, len(numbers), self._stored(owner, repo, closed), closed)
 
     def collect(self, owner, repo, **kwargs):
         self.state.maybe_fail("collect_all", owner, repo)

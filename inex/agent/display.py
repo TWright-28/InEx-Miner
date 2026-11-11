@@ -20,7 +20,10 @@ def _rows(result):
 
 
 SUMMARIES = {
-    "count_issues": lambda r: f"{r['issue_count']:,} issues on GitHub, {r['stored']:,} stored",
+    "count_issues": lambda r: (
+        f"{r['issue_count']:,} {'closed ' if r.get('closed') else ''}issues on GitHub, "
+        f"{r['stored']:,} stored"
+    ),
     "collect_all": lambda r: (
         f"{r['collected']:,} collected, {r['skipped']:,} already stored, {r['total']:,} in total"
     ),

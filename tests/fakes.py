@@ -32,11 +32,11 @@ class FakeCollection:
         self.issue_count = count
         self.error = error
 
-    def count(self, owner, repo):
-        self.calls.append(("count", owner, repo))
+    def count(self, owner, repo, closed=False):
+        self.calls.append(("count", owner, repo, closed))
         if (owner, repo) == ("nope", "nope"):
             raise InexError("repo_not_found", "nope/nope was not found on GitHub.")
-        return CountResult(owner, repo, self.issue_count, stored=0)
+        return CountResult(owner, repo, self.issue_count, stored=0, closed=closed)
 
     def collect(self, owner, repo, **kwargs):
         self.calls.append(("collect", owner, repo, kwargs))

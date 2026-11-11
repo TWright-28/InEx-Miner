@@ -145,8 +145,13 @@ class Store:
         )[0]
         return projects, issues, labelled
 
-    def issue_count(self, project_id):
-        return self._one("SELECT COUNT(*) FROM issues WHERE project_id = ?", (project_id,))[0]
+    def issue_count(self, project_id, state=None):
+        if state is None:
+            sql, params = "SELECT COUNT(*) FROM issues WHERE project_id = ?", (project_id,)
+        else:
+            sql = "SELECT COUNT(*) FROM issues WHERE project_id = ? AND state = ?"
+            params = (project_id, state)
+        return self._one(sql, params)[0]
 
     def count_existing_issues(self, project_id, numbers):
         if not numbers:

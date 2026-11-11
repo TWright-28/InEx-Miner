@@ -13,9 +13,11 @@ progress = logging.getLogger("inex.progress")
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 COUNT_QUERY = (
-    "query($owner: String!, $name: String!) "
-    "{ repository(owner: $owner, name: $name) { issues { totalCount } } }"
+    "query($owner: String!, $name: String!, $states: [IssueState!]) "
+    "{ repository(owner: $owner, name: $name) { issues(states: $states) { totalCount } } }"
 )
+CLOSED_STATE = "closed"
+CLOSED_STATES = ["CLOSED"]
 PER_PAGE = 100
 REQUEST_TIMEOUT_SECONDS = 30
 HTTP_UNAUTHORIZED = 401
@@ -41,6 +43,7 @@ class CountResult:
     repo: str
     issue_count: int
     stored: int
+    closed: bool = False
 
 
 @dataclass(frozen=True)
@@ -95,17 +98,19 @@ class CollectionService:
             )
         return InexError("github_error", f"GitHub request failed: {error}")
 
-    def _stored(self, owner, repo):
+    def _stored(self, owner, repo, closed=False):
         project_id = self.store.project_id(owner, repo)
-        return self.store.issue_count(project_id) if project_id is not None else 0
+        if project_id is None:
+            return 0
+        return self.store.issue_count(project_id, state=CLOSED_STATE if closed else None)
 
-    def count(self, owner, repo) -> CountResult:
+    def count(self, owner, repo, *, closed=False) -> CountResult:
         self._require_token()
         try:
             r = requests.post(
                 GRAPHQL_URL,
                 headers=self.headers,
-                json={"query": COUNT_QUERY, "variables": {"owner": owner, "name": repo}},
+                json={"query": COUNT_QUERY, "variables": self._countVariables(owner, repo, closed)},
                 timeout=REQUEST_TIMEOUT_SECONDS,
             )
             r.raise_for_status()
@@ -117,8 +122,19 @@ class CollectionService:
                 "repo_not_found", f"{owner}/{repo} was not found on GitHub.", owner=owner, repo=repo
             )
         return CountResult(
-            owner, repo, repository["issues"]["totalCount"], self._stored(owner, repo)
+            owner,
+            repo,
+            repository["issues"]["totalCount"],
+            self._stored(owner, repo, closed),
+            closed,
         )
+
+    @staticmethod
+    def _countVariables(owner, repo, closed):
+        variables = {"owner": owner, "name": repo}
+        if closed:
+            variables["states"] = CLOSED_STATES
+        return variables
 
     def parseTs(self, s):
         if not s:
@@ -678,7 +694,7 @@ class CollectionService:
             return None
 
     def collect(
-        self, owner, repo, *, count=None, start=None, end=None, order="desc"
+        self, owner, repo, *, count=None, start=None, end=None, order="desc", closed=False
     ) -> CollectResult:
         self._require_token()
         db = self.store
@@ -693,9 +709,10 @@ class CollectionService:
             direction = "desc"
 
         task = f"Collecting {owner}/{repo}"
+        state = CLOSED_STATE if closed else "all"
         try:
             while True:
-                issuesUrl = f"https://api.github.com/repos/{owner}/{repo}/issues?state=all&sort=created&direction={direction}"
+                issuesUrl = f"https://api.github.com/repos/{owner}/{repo}/issues?state={state}&sort=created&direction={direction}"
                 try:
                     issues = self.get(f"{issuesUrl}&per_page={PER_PAGE}&page={pg}").json()
                 except requests.RequestException as error:
@@ -714,13 +731,13 @@ class CollectionService:
                             continue
                         if start_date and created and created < start_date:
                             logger.info("Reached start_date boundary, stopping.")
-                            return self._finish(owner, repo, collected, skipped)
+                            return self._finish(owner, repo, collected, skipped, closed)
                     else:
                         if start_date and created and created < start_date:
                             continue
                         if end_date and created and created > end_date:
                             logger.info("Reached end_date boundary, stopping.")
-                            return self._finish(owner, repo, collected, skipped)
+                            return self._finish(owner, repo, collected, skipped, closed)
 
                     num = issue.get("number")
                     if db.issue_id(projectId, num):
@@ -759,17 +776,17 @@ class CollectionService:
 
                     if max_issues and collected >= max_issues:
                         logger.info("Reached max_issues cap.")
-                        return self._finish(owner, repo, collected, skipped)
+                        return self._finish(owner, repo, collected, skipped, closed)
 
                 if len(issues) < PER_PAGE:
                     break
                 pg += 1
 
-            return self._finish(owner, repo, collected, skipped)
+            return self._finish(owner, repo, collected, skipped, closed)
         finally:
             finish(task, collected, max_issues)
 
-    def _finish(self, owner, repo, collected, skipped):
+    def _finish(self, owner, repo, collected, skipped, closed=False):
         logger.info(
             "Finished collection for %s/%s: %d collected, %d skipped",
             owner,
@@ -777,4 +794,4 @@ class CollectionService:
             collected,
             skipped,
         )
-        return CollectResult(collected, skipped, self._stored(owner, repo))
+        return CollectResult(collected, skipped, self._stored(owner, repo, closed))

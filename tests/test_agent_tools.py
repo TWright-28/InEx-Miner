@@ -6,8 +6,8 @@ from fakes import FakeLinkage, fake_app
 from inex.agent.tools import TOOL_NAMES, build_tools
 
 ARGS = {
-    "count_issues": {"repo_name"},
-    "collect_all": {"repo_name", "count", "start_date", "end_date", "direction"},
+    "count_issues": {"repo_name", "closed_only"},
+    "collect_all": {"repo_name", "count", "start_date", "end_date", "direction", "closed_only"},
     "classify_all": {"repo_name", "count", "start_date", "end_date", "direction"},
     "preview_classification": {"repo_name", "count", "start_date", "end_date", "direction"},
     "snapshot_dependencies": {
@@ -52,6 +52,7 @@ def test_success_is_a_status_dict(app):
         "repo": "react",
         "issue_count": 14779,
         "stored": 0,
+        "closed": False,
     }
 
 
@@ -85,7 +86,13 @@ def test_inputs_are_normalised_before_the_service(app):
             "collect",
             "acme",
             "widget",
-            {"count": 5, "start": "2020-01-01", "end": "2020-01-31T23:59:59Z", "order": "asc"},
+            {
+                "count": 5,
+                "start": "2020-01-01",
+                "end": "2020-01-31T23:59:59Z",
+                "order": "asc",
+                "closed": False,
+            },
         )
     ]
 
@@ -138,6 +145,7 @@ def test_null_words_count_as_omitted_window_arguments(app, word):
         "start": None,
         "end": None,
         "order": "desc",
+        "closed": False,
     }
 
 
