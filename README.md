@@ -10,7 +10,7 @@ a dependency, the runtime, the toolchain) or **Not a Bug**, and links every issu
 release that was live when it was filed, with that release's dependencies. Everything lands
 in a local SQLite database you can query and export.
 
-You can use it two ways:
+You can use it in two ways:
 
 - **Talk to it.** `python -m inex chat` starts an agent that understands requests like
   *"collect the 100 newest issues from axios/axios and classify them"*.
